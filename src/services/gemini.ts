@@ -122,9 +122,7 @@ Workflow:
           
           const data = await res.json();
           if (data.success) {
-            toolResponseText = data.simulated 
-              ? "Email simulated (RESEND_API_KEY not set). Carrier responded with 'In Review'."
-              : "Email sent successfully via Resend. Carrier responded with 'In Review'.";
+            toolResponseText = "Email sent successfully via Resend. Carrier responded with 'In Review'.";
           } else {
             toolResponseText = "Failed to send email.";
             throw new Error(data.error || "Failed to send email.");
@@ -151,39 +149,33 @@ Workflow:
           
           const data = await res.json();
           if (data.success) {
-            if (data.simulated) {
-              // Simulate waiting for a response
-              await new Promise(resolve => setTimeout(resolve, 3000));
-              toolResponseText = "Voice call simulated. Carrier responded with 'We will review this and get back to you shortly.'";
+            // Poll for the actual response
+            let attempts = 0;
+            let callCompleted = false;
+            let speechRecorded = "";
+            
+            while (attempts < 150 && !callCompleted) { // Wait up to 5 minutes
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              const statusRes = await fetch(`/api/call-status/${data.callSid}`);
+              
+              if (!statusRes.ok) {
+                throw new Error(`Failed to check call status: ${statusRes.status}`);
+              }
+              
+              const statusData = await statusRes.json();
+              
+              if (statusData.status === 'completed') {
+                callCompleted = true;
+                speechRecorded = statusData.speech;
+              }
+              attempts++;
+            }
+            
+            if (callCompleted) {
+              toolResponseText = `Voice call completed. Full transcript:\n${speechRecorded}`;
             } else {
-              // Poll for the actual response
-              let attempts = 0;
-              let callCompleted = false;
-              let speechRecorded = "";
-              
-              while (attempts < 150 && !callCompleted) { // Wait up to 5 minutes
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                const statusRes = await fetch(`/api/call-status/${data.callSid}`);
-                
-                if (!statusRes.ok) {
-                  throw new Error(`Failed to check call status: ${statusRes.status}`);
-                }
-                
-                const statusData = await statusRes.json();
-                
-                if (statusData.status === 'completed') {
-                  callCompleted = true;
-                  speechRecorded = statusData.speech;
-                }
-                attempts++;
-              }
-              
-              if (callCompleted) {
-                toolResponseText = `Voice call completed. Full transcript:\n${speechRecorded}`;
-              } else {
-                toolResponseText = "Voice call timed out waiting for carrier response.";
-                throw new Error("Voice call timed out waiting for carrier response.");
-              }
+              toolResponseText = "Voice call timed out waiting for carrier response.";
+              throw new Error("Voice call timed out waiting for carrier response.");
             }
           } else {
             toolResponseText = "Failed to initiate voice call.";

@@ -101,9 +101,7 @@ async function startServer() {
       const { to, subject, text } = req.body;
       
       if (!process.env.RESEND_API_KEY) {
-        // Return a mock success if no key is provided yet, to avoid crashing the app
-        console.warn("RESEND_API_KEY is not set. Simulating email send.");
-        return res.json({ success: true, simulated: true });
+        throw new Error("RESEND_API_KEY is not set. Cannot send a real email.");
       }
 
       const resend = new Resend(process.env.RESEND_API_KEY);
@@ -167,8 +165,7 @@ async function startServer() {
       const appUrl = getPublicUrl();
 
       if (!accountSid || !authToken || !fromNumber || !appUrl) {
-        console.warn("Twilio credentials or APP_URL missing. Simulating phone call.");
-        return res.json({ success: true, simulated: true, callSid: 'simulated-' + Date.now() });
+        throw new Error("Twilio credentials or APP_URL missing. Cannot make a real phone call.");
       }
 
       const client = twilio(accountSid, authToken);
