@@ -79,7 +79,8 @@ async function withRetry<T>(operation: () => Promise<T>, maxRetries = 2): Promis
 }
 
 function getPublicUrl() {
-  let url = (process.env.APP_URL || '').replace(/\/$/, '');
+  // Use Render's external URL if available, or the one provided by the user
+  let url = (process.env.RENDER_EXTERNAL_URL || process.env.APP_URL || 'https://claims-agent.onrender.com').replace(/\/$/, '');
   // The ais-dev URL is often protected by authentication in AI Studio.
   // We must use the ais-pre (shared) URL for external webhooks like Twilio.
   if (url.includes('ais-dev-')) {
@@ -165,7 +166,7 @@ async function startServer() {
       const appUrl = getPublicUrl();
 
       if (!accountSid || !authToken || !fromNumber || !appUrl) {
-        throw new Error("Twilio credentials or APP_URL missing. Cannot make a real phone call.");
+        throw new Error("Twilio credentials missing. Cannot make a real phone call.");
       }
 
       const client = twilio(accountSid, authToken);
@@ -198,9 +199,10 @@ async function startServer() {
       });
 
       res.json({ success: true, callSid: call.sid });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error making phone call:", error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to make phone call" });
+      const errorMessage = error?.message || String(error) || "Failed to make phone call";
+      res.status(500).json({ error: errorMessage });
     }
   });
 

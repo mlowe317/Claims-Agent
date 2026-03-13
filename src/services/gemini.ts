@@ -152,9 +152,14 @@ Workflow:
           if (!res.ok) {
             let errorMsg = `Server responded with status ${res.status}`;
             try {
-              const errorData = await res.json();
-              if (errorData.error) errorMsg = errorData.error;
-              else if (errorData.details) errorMsg = errorData.details;
+              const text = await res.text();
+              try {
+                const errorData = JSON.parse(text);
+                if (errorData.error) errorMsg = errorData.error;
+                else if (errorData.details) errorMsg = errorData.details;
+              } catch (e) {
+                errorMsg = `${errorMsg}: ${text.substring(0, 100)}`;
+              }
             } catch (e) {}
             throw new Error(errorMsg);
           }
