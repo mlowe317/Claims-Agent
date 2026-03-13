@@ -117,7 +117,13 @@ Workflow:
           });
           
           if (!res.ok) {
-            throw new Error(`Server responded with status ${res.status}`);
+            let errorMsg = `Server responded with status ${res.status}`;
+            try {
+              const errorData = await res.json();
+              if (errorData.error) errorMsg = errorData.error;
+              else if (errorData.details) errorMsg = errorData.details;
+            } catch (e) {}
+            throw new Error(errorMsg);
           }
           
           const data = await res.json();
@@ -144,7 +150,13 @@ Workflow:
           });
           
           if (!res.ok) {
-            throw new Error(`Server responded with status ${res.status}`);
+            let errorMsg = `Server responded with status ${res.status}`;
+            try {
+              const errorData = await res.json();
+              if (errorData.error) errorMsg = errorData.error;
+              else if (errorData.details) errorMsg = errorData.details;
+            } catch (e) {}
+            throw new Error(errorMsg);
           }
           
           const data = await res.json();

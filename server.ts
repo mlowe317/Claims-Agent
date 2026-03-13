@@ -116,7 +116,7 @@ async function startServer() {
       res.json({ success: true, data });
     } catch (error) {
       console.error("Error sending email:", error);
-      res.status(500).json({ error: "Failed to send email" });
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to send email" });
     }
   });
 
@@ -200,7 +200,7 @@ async function startServer() {
       res.json({ success: true, callSid: call.sid });
     } catch (error) {
       console.error("Error making phone call:", error);
-      res.status(500).json({ error: "Failed to make phone call" });
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to make phone call" });
     }
   });
 
